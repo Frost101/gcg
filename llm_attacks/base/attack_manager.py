@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from fastchat.model import get_conversation_template
 from transformers import (AutoModelForCausalLM, AutoTokenizer, GPT2LMHeadModel,
                           GPTJForCausalLM, GPTNeoXForCausalLM,
-                          LlamaForCausalLM)
+                          LlamaForCausalLM, GemmaForCausalLM)
 
 
 class NpEncoder(json.JSONEncoder):
@@ -34,7 +34,9 @@ def get_embedding_layer(model):
     elif isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens
     elif isinstance(model, GPTNeoXForCausalLM):
-        return model.base_model.embed_in
+        return model.base_model.embed_in 
+    elif isinstance(model, GemmaForCausalLM):
+        return model.model.embed_tokens
     else:
         raise ValueError(f"Unknown model type: {type(model)}")
 
@@ -44,7 +46,10 @@ def get_embedding_matrix(model):
     elif isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens.weight
     elif isinstance(model, GPTNeoXForCausalLM):
-        return model.base_model.embed_in.weight
+        return model.base_model.embed_in.weight 
+    elif isinstance(model, GemmaForCausalLM):
+        embedding_layer = get_embedding_layer(model)
+        return embedding_layer.weight
     else:
         raise ValueError(f"Unknown model type: {type(model)}")
 
@@ -55,6 +60,10 @@ def get_embeddings(model, input_ids):
         return model.model.embed_tokens(input_ids)
     elif isinstance(model, GPTNeoXForCausalLM):
         return model.base_model.embed_in(input_ids).half()
+    elif isinstance(model, GemmaForCausalLM):
+        embedding_layer = get_embedding_layer(model)
+        embeddings = embedding_layer(input_ids)
+        return embeddings
     else:
         raise ValueError(f"Unknown model type: {type(model)}")
 
